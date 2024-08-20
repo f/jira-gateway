@@ -3,19 +3,6 @@ import { Application, Router, Context } from "https://deno.land/x/oak/mod.ts";
 // Configuration
 const API_SERVER = "https://pozitim.atlassian.net";
 
-// Function to extract the API key from Basic Auth header
-function extractApiKeyFromBasicAuth(authHeader: string): string | null {
-  if (!authHeader.startsWith("Basic ")) {
-    return null;
-  }
-
-  const encodedCredentials = authHeader.slice("Basic ".length);
-  const decodedCredentials = atob(encodedCredentials);
-  const [_, apiKey] = decodedCredentials.split(":");
-
-  return apiKey || null;
-}
-
 // Proxy request to the appropriate API with the correct Authorization header
 async function proxyRequest(ctx: Context, baseUrl: string, authHeader: string) {
   const url = `${baseUrl}${ctx.request.url.pathname}${ctx.request.url.search}`;
@@ -48,7 +35,7 @@ const app = new Application();
 const router = new Router();
 
 // REST API routes with Basic Auth
-router.all("/rest/api/2/:path*", async (ctx) => {
+router.all("/:path*", async (ctx) => {
   const authHeader = ctx.request.headers.get("Authorization");
 
   if (!authHeader) {
@@ -58,32 +45,6 @@ router.all("/rest/api/2/:path*", async (ctx) => {
   }
 
   // Proxy with the original Basic Auth header
-  await proxyRequest(ctx, API_SERVER, authHeader);
-});
-
-// Agile API routes with Bearer Auth
-router.all("/rest/agile/1.0/:path*", async (ctx) => {
-  const authHeader = ctx.request.headers.get("Authorization");
-
-  if (!authHeader) {
-    ctx.response.status = 401;
-    ctx.response.body = { message: "Authorization header is missing" };
-    return;
-  }
-
-  // Extract the API key from the Basic Auth header
-  const apiKey = extractApiKeyFromBasicAuth(authHeader);
-
-  if (!apiKey) {
-    ctx.response.status = 401;
-    ctx.response.body = { message: "Invalid Basic authorization header" };
-    return;
-  }
-
-  // Convert to Bearer token
-  const bearerAuthHeader = `Basic ${btoa(apiKey)}`;
-
-  // Proxy with the Bearer Auth header
   await proxyRequest(ctx, API_SERVER, authHeader);
 });
 
