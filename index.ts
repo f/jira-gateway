@@ -81,10 +81,10 @@ router.all("/rest/agile/1.0/:path*", async (ctx) => {
   }
 
   // Convert to Bearer token
-  const bearerAuthHeader = `Bearer ${apiKey}`;
+  const bearerAuthHeader = `Basic ${btoa(apiKey)}`;
 
   // Proxy with the Bearer Auth header
-  await proxyRequest(ctx, API_SERVER, bearerAuthHeader);
+  await proxyRequest(ctx, API_SERVER, authHeader);
 });
 
 // Default route for unmatched paths
