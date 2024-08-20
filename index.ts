@@ -2,8 +2,6 @@ import { Application, Router, Context } from "https://deno.land/x/oak/mod.ts";
 
 // Configuration
 const API_SERVER = "https://pozitim.atlassian.net";
-const AGILE_API_BASE = `${API_SERVER}/rest/agile/1.0`;
-const REST_API_BASE = `${API_SERVER}/rest/api/2`;
 
 // Function to extract the API key from Basic Auth header
 function extractApiKeyFromBasicAuth(authHeader: string): string | null {
@@ -33,6 +31,7 @@ async function proxyRequest(ctx: Context, baseUrl: string, authHeader: string) {
 
   const body = method !== "GET" && method !== "HEAD" ? await ctx.request.body({ type: "stream" }).value : undefined;
 
+  console.log(`Proxying request to ${url}`);
   const response = await fetch(url, {
     method,
     headers,
@@ -59,7 +58,7 @@ router.all("/rest/api/2/:path*", async (ctx) => {
   }
 
   // Proxy with the original Basic Auth header
-  await proxyRequest(ctx, REST_API_BASE, authHeader);
+  await proxyRequest(ctx, API_SERVER, authHeader);
 });
 
 // Agile API routes with Bearer Auth
@@ -85,7 +84,7 @@ router.all("/rest/agile/1.0/:path*", async (ctx) => {
   const bearerAuthHeader = `Bearer ${apiKey}`;
 
   // Proxy with the Bearer Auth header
-  await proxyRequest(ctx, AGILE_API_BASE, bearerAuthHeader);
+  await proxyRequest(ctx, API_SERVER, bearerAuthHeader);
 });
 
 // Default route for unmatched paths
